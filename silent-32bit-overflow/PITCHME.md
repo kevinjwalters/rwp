@@ -78,3 +78,100 @@ long          | 64 | 0 | 18446744073709551615
 [C99](https://en.wikipedia.org/wiki/C99) standard introduced some new variables to give a known size via C `typedef` feature,
 e.g `int32_t` and `uint64_t`.
 
+---
+## Large integers
+
+* A signed 32 bit integer can stored a value just over 2 billion.
+* Are "large" integers only used in scientific applications?
+* Would a simple program ever encounter this?
+* Time is one area:
+  * CPU clock speed, requirements for accurate time have driven requirements.
+  * NTP, GPS/GLONASS and better hardware clocks and o/s support aid accuracy.
+  * Time values often have been *changed* from seconds -> ms -> us -> ns.
+  * Library changesr porting to new platform may require use of different resolution timers.
+  * Changes must be very careful to ensure all maths is at appropriate precision.
+
+Note:
+* Accuracy vs precision/resolution.
+* GPS/GLONASS extremely accurate but very weak signal plus unsigned for civilian use.
+* Are GPS receiver/clock perfect? Firmware bug free?
+
++++
+## Integer overflow examples
+### Types used for all examples
+
+```c
+typedef int Duration;
+typedef uint32_t OtherDuration;
+typedef uint64_t ReplacementDuration;
+#define ReplacementDurationFormat "%lu"
+```
+
+@[1](Common code from early days of C.)
+@[2](Using the C99 to get a known size `unsigned` type.)
+@[3](64 bit version of OtherDuration - often OtherDuration would simply be enlarged to 64 bit.)
+@[4](Helpful to have the `printf` type for the data type to ensure they match.)
+
+---
+## Integer overflow examples
+### Example demo1() code
+
+```c
+int i = 0;
+int timer_us = 0;
+
+for (i=0; i < 5; i++) {
+    timer_us += 500*1000;  /* add half a second */
+    printf("timer_us=%d\n", timer_us);
+} 
+```
+
+@[1-2](Two (signed) `int`s initialised.)
+@[4-7](Five iterations adding half a second in microseconds. `printf()` uses C's primitive approach to handling a variable number of arguments.)
+
+---
+## Integer overflow examples
+### Example demo1() output
+
+```
+timer_us=500000
+timer_us=1000000
+timer_us=1500000
+timer_us=2000000
+timer_us=2500000
+```
+
+All is well, final value is two and half million microseconds.
+
+---
+## Integer overflow examples
+### Example demo2() code
+
+```c
+    int i = 0;
+    Duration timer_ns = 0;
+
+    for (i=0; i < 5; i++) {
+        timer_ns += 500000000;  /* add half a second */
+        printf("timer_us=%d timer_us=%ld\n", timer_ns, timer_ns);
+    } 
+```
+
+@[1-2](`Duration` is now used to hold a nano-second based value - how large is it?)
+@[4-7](A difficult to read large value is added five times.)
+
+---
+## Integer overflow examples
+### Example demo2() output
+
+```
+timer_us=500000000 timer_us=500000000
+timer_us=1000000000 timer_us=1000000000
+timer_us=1500000000 timer_us=1500000000
+timer_us=2000000000 timer_us=2000000000
+timer_us=-1794967296 timer_us=2500000000
+```
+
+@[1-4](Looks good.)
+@[5(A problem, `%d` is correct but prints it as a negative value due to overflow of two's signed complement value, `%ld` is dangerously wrong on LP64 - it prints correctly due to luck of how compiled code passes and reads the 64 bit value.)
+
