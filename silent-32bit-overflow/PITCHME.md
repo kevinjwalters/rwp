@@ -15,7 +15,7 @@ Note:
 * CPUs have an Arithmetic Logic Unit (ALU) for integer maths
 * Operations are on a fixed word size:
   * Most processors in large devices are 64 bit now.
-  * Raspberry Pi have been 64bit since the model `2B ver 1.2`.
+  * Raspberry Pi have been 64 bit since the model `2B ver 1.2`.
   * Small/cheap/low-power devices may use 32 bit or even lower.
   * IBM PC (1981) used Intel 8088 with 16 bit word size.
 * ALUs set carry/overflow flag for operations.
@@ -173,5 +173,5 @@ timer_us=-1794967296 timer_us=2500000000
 ```
 
 @[1-4](Looks good.)
-@[5(A problem, `%d` is correct but prints it as a negative value due to overflow of two's signed complement value, `%ld` is dangerously wrong on LP64 - it prints correctly due to luck of how compiled code passes and reads the 64 bit value.)
+@[5](A problem: `%d` is correct but prints it as a negative value due to overflow of two's signed complement value, `%ld` is *dangerously* wrong on LP64 - it prints correctly due to luck of how compiled code passes and reads the 64 bit value.)
 
