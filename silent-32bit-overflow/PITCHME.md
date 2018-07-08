@@ -1,4 +1,4 @@
-## Finite precision maths and overflow
+## Finite precision maths and overflow v1.1
 ![Logo test](/images/test-logo1.jpg)
 
 ![Create Commons License BY-NC-ND/4.0](https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png)
@@ -40,7 +40,7 @@ Note:
 Note:
 * Memory access constrained by operating system which will be aided by memory management features on CPU.
 
----
++++
 ## C variables
 
 The built-in numerical types in the C language are fixed size.
@@ -84,9 +84,8 @@ e.g `int32_t` and `uint64_t`.
 * Are "large" integers only used in scientific applications?
 * Would a simple program ever encounter this?
 
----
-## Large integers
-### Time
++++
+## Large integers - time
 
 * Time is one area:
   * CPU clock speed increases and requirements for accuracy have driven requirements.
@@ -102,9 +101,8 @@ Note:
 * NTP essential to allow time comparison between hosts/devices.
 * Commercial software solutions offer superior time sync to ntp.
 
----
-## Large integers
-### File size
++++
+## Large integers - File size
 
 * Disk space and partition sizes.
   * Storage has grown over last two decades
@@ -118,7 +116,7 @@ Note:
 
 Note:
 
-+++
+---
 ## Integer overflow examples
 ### Types used for all examples
 
@@ -134,7 +132,7 @@ typedef uint64_t ReplacementDuration;
 @[1](Common code from early days of C.)
 @[2](Using the C99 to get a known size `unsigned` type.)
 @[3](64 bit version of OtherDuration - often OtherDuration would simply be enlarged to 64 bit.)
-@[4](Helpful to have the `printf` type for the data type to ensure they match.)
+@[4](Helpful to have the `printf` type for the data type to aid matching.)
 
 ---
 ## Integer overflow examples
@@ -157,7 +155,7 @@ Note:
  * 500*1000 is one way to make this easier to read and less likely to get wrong number of zeros.
  * Compiler's optimiser can get calculate any constant values at compile time.
 
----
++++
 ## Integer overflow examples
 ### Example demo1() output (gcc 4.8.5 Centos 7)
 
@@ -171,7 +169,7 @@ timer_us=2500000
 
 All is well, final value is two and half million microseconds.
 
-+++
+---
 ## Integer overflow examples
 ### Example demo2() code
 
@@ -186,9 +184,16 @@ All is well, final value is two and half million microseconds.
 ```
 
 @[1-2](`Duration` is now used to hold a nano-second based value - can we remember what size that type is?)
-@[4-7](A difficult to read and therefore error-prone large value is added five times. Comment expresses programmer's intention.)
+@[4](Simpl loop.}
+@[5](Value is difficult to read and therefore error-prone to type/read. Useful comment expressing programmer's intention.)
+@[6](Programmer has forgotten to update the text.)
 
----
+Note:
+* Comments can be very useful to determine the intention especially when no specification is available.
+* Change management systems when used well can either show directly *why* something was done based on the change log or on tickets references in the change log.
+* Very low detail in change log is rarely a good sign.
+* Change log (and tickets) must be preserved to aid future programmers *even when source code control system changes*.
++++
 ## Integer overflow examples
 ### Example demo2() output (gcc 4.8.5 Centos 7)
 
@@ -200,10 +205,10 @@ timer_us=2000000000 timer_us=2000000000
 timer_us=-1794967296 timer_us=2500000000
 ```
 
-@[1-4](Looks good.)
+@[1-4](Looks good apart from programmer forgotten to change text to `timer_ns`.)
 @[5](A problem: `%d` is correct but prints it as a negative value due to overflow of two's signed complement value, `%ld` is *dangerously* wrong on LP64 - it prints correctly due to *luck* of how compiled code passes and reads the 64 bit value.)
 
----
++++
 ## Integer overflow examples
 ### Example demo2() output (cl 19.14.26431 Windows 10)
 
@@ -215,10 +220,10 @@ timer_us=2000000000 timer_us=2000000000
 timer_us=-1794967296 timer_us=-1794967296
 ```
 
-@[1-4](Looks good.)
+@[1-4](Looks good apart from programmer forgotten to change text to `timer_ns`.)
 @[5](A problem: overflowed value is printed twice but it's the same code! Microsoft uses LLP64 so `long` is 32 bits. Visual Studio does parse `printf()` string and warn about mismatches with args.)
 
-+++
+---
 ## Integer overflow examples
 ### Example demo3() code
 
@@ -226,7 +231,7 @@ timer_us=-1794967296 timer_us=-1794967296
     int i = 0;
     Duration timer_ns = 0;
     int six_us = 6e6;
-    int six_ns = six_us * 1000; /* no compiler warning - static tools may detect this */
+    int six_ns = six_us * 1000;
 
     timer_ns += six_ns;
     printf("timer_ns=%ld\n", timer_ns, timer_ns);
@@ -238,7 +243,11 @@ timer_us=-1794967296 timer_us=-1794967296
 @[6](Bad value is now added to `Duration` which is also too small to hold intended value.)
 @[7](Another bug here, too many values passed to `printf()`, wrong but harmless.)
 
----
+Note:
+* Static code analysis can be very valuable but needs to be carefully introduced to existing code bases and challenging to introduce technically and culturally across a large enterprise.
+* Global or project level inhibition of warnings from compiler and analyser can be beneficial to reduce noise but can also hide problems.
+* A sophisiticated approach is for the analyser to suggest code changes by applying to code *via an approval gate*.
++++
 ## Integer overflow examples
 ### Example demo3() output (gcc 4.8.5 Centos 7)
 
@@ -247,14 +256,14 @@ timer_ns=1705032704
 ```
 
 * Value is clearly not 6 billion (nanoseconds)!
-* Value is 6*1000*1000*1000-(2^32)
+* Value is 6\*1000\*1000\*1000-(2^32)
 * Unit tests might pick this up.
 
 Note:
 * C has no operator for power, other languages use `^` or `**`
 * Same output on Windows.
 
-+++
+---
 ## Integer overflow examples
 ### Example demo4() code 
 
@@ -276,7 +285,7 @@ Note:
 Note:
 * Mixing 32 bit and 64 bit arithmetic here without care has broken this.
 
----
++++
 ## Integer overflow examples
 ### Example demo4() output (gcc 4.8.5 Centos 7)
 
@@ -290,7 +299,7 @@ timer_ns=1705032704
 Note:
 * Same output on Windows.
 
-+++
+---
 ## Integer overflow examples
 ### Example demo5() code
 
@@ -305,13 +314,13 @@ Note:
 ```
 
 @[1-3](Reasonable.)
-@[4](C is harsh here - arithmetic is performed based on operand sizes (`int` and `long`) rather than assignment size.)
+@[4](C is harsh here - arithmetic is performed based on *operand sizes* (`int` and `long`) rather than assignment size.)
 @[6](Ok if the value in six_ns is ok.)
 @[7](Cut and paste buglet from previous examples.)
 
 Note:
 
----
++++
 ## Integer overflow examples
 ### Example demo5() output (gcc 4.8.5 Centos 7)
 
@@ -322,7 +331,7 @@ timer_ns=6000000000
 * Correct on Linux (LP64) but not portable and would not work if compiled to produce a 32 bit binary.
 * `1000LL` rather than `1000L` would be one fix here, `(int64_t)six_us` is another.
 
----
++++
 ## Integer overflow examples
 ### Example demo5() output (cl 19.14.26431 Windows 10)
 
@@ -333,7 +342,7 @@ timer_ns=1705032704
 * Output wrong on Windows (LLP64).
 * `1000LL` rather than `1000L` would be one fix here, `(int64_t)six_us` is another.
 
-+++
+---
 ## Integers in other languages 
 
 * Perl - single number type which on overflow will promote to unsigned integer or double - integer size *varies* between 32 bit and 64 bit interpreter.
@@ -350,7 +359,7 @@ Note:
 * `smallint` is an efficiency measure for small microcontroller boards.
 * CircuitPython is Adafruit's fork of MicroPython for their boards.
 
-+++
+---
 ## Calculating durations
 
 ```c
@@ -367,15 +376,16 @@ duration = t2 - t1;
 
 Note:
 
-+++
+---
 ## Other examples
 
 * Epoch times:
   * Unix `gettimeofday()` used `int`, now `time_t` but can still be 32 or 64 bit - signed gives range from 1970 to ~2038 - [Y2038 problem](https://en.wikipedia.org/wiki/Year_2038_problem)
 * 100Hz timer - signed int max is ~248 days - [B787 bug](https://www.engadget.com/2015/05/01/boeing-787-dreamliner-software-bug/)
-* Ada throws exceptions for conversions - [Ariane 5 failure](http://sunnyday.mit.edu/accidents/Ariane5accidentreport.html) with a value exceeding 16 bit range.
+* Ada throws exceptions for conversions:
+  * Expensive error: [Ariane 5 failure](http://sunnyday.mit.edu/accidents/Ariane5accidentreport.html) from a value exceeding 16 bit range.
 
-+++
+---
 ## Conclusion
 
 * Surprising variety in basic type across languages.
@@ -388,7 +398,7 @@ Note:
   * more complicated for library code particularly with a diverse userbase
   * likely to break ABI, e.g. a library change may force a recompile of (ALL!) code using it
 
----
++++
 ## Further thoughts
 
 * Think about atypical but possible values for unit tests.
@@ -398,7 +408,7 @@ Note:
 * Microsoft LLP64 vs rest of world LP64 - care with `long` for portable code.
 * Cygwin on Windows uses LP64.
 
----
++++
 ## Further reading
 
 * Code examples: [silent-32bit-overflow.c](https://github.com/kevinjwalters/rwp-examples/blob/master/examples/silent-32bit-overflow/silent-32bit-overflow.c)
