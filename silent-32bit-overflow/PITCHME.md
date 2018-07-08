@@ -1,5 +1,4 @@
 ## Finite precision maths and overflow
-##### some text in the page using header
 ![Logo test](/images/test-logo1.jpg)
 
 ![Create Commons License BY-NC-ND/4.0](https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png)
@@ -65,7 +64,7 @@ Note:
 * DEC Alpha was 64 bit circa 1991
 
 +++
-## C variables
+## C variables size
 
 Type          | Size (bits) | From | To |
 ---           | ---         | ---  | ---
@@ -85,17 +84,22 @@ e.g `int32_t` and `uint64_t`.
 * Are "large" integers only used in scientific applications?
 * Would a simple program ever encounter this?
 * Time is one area:
-  * CPU clock speed, requirements for accurate time have driven requirements.
+  * CPU clock speed increases and requirements for accuracy have driven requirements.
   * NTP, GPS/GLONASS and better hardware clocks and o/s support aid accuracy.
   * Time values often have been *changed* from seconds -> ms -> us -> ns.
   * Library changesr porting to new platform may require use of different resolution timers.
   * Changes must be very careful to ensure all maths is at appropriate precision.
+* File length:
+  * Storage has grown over last two decades
+  * Multi-TB disks common even at home.
+  * O/s now supports > 2TB files so `int` *cannot* be used for file size.
 
 Note:
 * Accuracy vs precision/resolution.
-* GPS/GLONASS extremely accurate but very weak signal plus unsigned for civilian use.
+* GPS/GLONASS extremely accurate but very weak signal and not authenticated for civilian use.
 * Are GPS receiver/clock perfect? Firmware bug free?
-
+* NTP essential to allow time comparison between hosts/devices.
+* Commercial software solutions offer superior time sync to ntp.
 +++
 ## Integer overflow examples
 ### Types used for all examples
@@ -129,9 +133,13 @@ for (i=0; i < 5; i++) {
 @[1-2](Two (signed) `int`s initialised.)
 @[4-7](Five iterations adding half a second in microseconds. `printf()` uses C's primitive approach to handling a variable number of arguments.)
 
+Note:
+ * 500*1000 is one way to make this easier to read and less likely to get wrong number of zeros.
+ * Compiler will optimise any maths which can be calculated at compile time.
+
 ---
 ## Integer overflow examples
-### Example demo1() output
+### Example demo1() output (gcc 4.8.5 Centos 7)
 
 ```
 timer_us=500000
@@ -143,7 +151,7 @@ timer_us=2500000
 
 All is well, final value is two and half million microseconds.
 
----
++++
 ## Integer overflow examples
 ### Example demo2() code
 
@@ -157,12 +165,12 @@ All is well, final value is two and half million microseconds.
     } 
 ```
 
-@[1-2](`Duration` is now used to hold a nano-second based value - how large is it?)
-@[4-7](A difficult to read large value is added five times.)
+@[1-2](`Duration` is now used to hold a nano-second based value - can we remember what size variable is?)
+@[4-7](A difficult to read and therefore error-prone large value is added five times. Comment expresses programmer's intention.)
 
 ---
 ## Integer overflow examples
-### Example demo2() output
+### Example demo2() output (gcc 4.8.5 Centos 7)
 
 ```
 timer_us=500000000 timer_us=500000000
@@ -173,5 +181,75 @@ timer_us=-1794967296 timer_us=2500000000
 ```
 
 @[1-4](Looks good.)
-@[5](A problem: `%d` is correct but prints it as a negative value due to overflow of two's signed complement value, `%ld` is *dangerously* wrong on LP64 - it prints correctly due to luck of how compiled code passes and reads the 64 bit value.)
+@[5](A problem: `%d` is correct but prints it as a negative value due to overflow of two's signed complement value, `%ld` is *dangerously* wrong on LP64 - it prints correctly due to *luck* of how compiled code passes and reads the 64 bit value.)
+
+---
+## Integer overflow examples
+### Example demo2() output (cl 19.14.26431 Windows 10)
+
+```
+timer_us=500000000 timer_us=500000000
+timer_us=1000000000 timer_us=1000000000
+timer_us=1500000000 timer_us=1500000000
+timer_us=2000000000 timer_us=2000000000
+timer_us=-1794967296 timer_us=-1794967296
+```
+
+@[1-4](Looks good.)
+@[5](A problem: overflowed value is printed twice but it's the same code! Microsoft uses LLP64 so `long` is 32 bits. Visual Studio does parse `printf()` string and warn about mismatches with args.)
++++
+## Integers in other Languages 
+
+* Perl - single number type which on overflow will promote to unsigned integer or double - integer size *varies* between 32 bit and 64 bit interpreter.
+* Python 2 - `int` which auto promotes to infinite precision `long` since v2.2 ([PEP 237](https://www.python.org/dev/peps/pep-0237/))
+* Python 3 - infinite precision (cf perl's [Math::BigInt](https://perldoc.perl.org/Math/BigInt.html))
+* MicroPython - uses 31 bit `smallint` as 1 bit is re-purposed.
+
+Note:
+* Terminology on each line refers to types in each language which may differ to C.
+* MicroPython is a smaller version of Python 3 for [BBC micro:bit](http://microbit.org/)
+* CircuitPython is Adafruit's fork of MicroPython for their microcontroller boards.
+
++++
+## Calculation durations
+
+```c
+t1 = timenow();
+dosomething();
+t2 = timenow();
+duration = t2 - t1;
+```
+
+* `timenow()` returns current time - resolution and accuracy can be varied for discussion purposes.
+* Will duration always be non-zero?
+* Will duration always be positive?
+* This leads to another topic.
+
+Note:
+
++++
+## Other examples
+
+* Epoch times:
+  * Unix `gettimeofday()` used `int`, now `time_t` but can still be 32 or 64 bit - signed gives range from 1970 to ~2038 - [Y2038 problem](https://en.wikipedia.org/wiki/Year_2038_problem)
+* 100Hz timer - signed int max is ~248 days - [B787 bug](https://www.engadget.com/2015/05/01/boeing-787-dreamliner-software-bug/)
+* Ada throws exceptions for conversions - [Ariane 5 failure](http://sunnyday.mit.edu/accidents/Ariane5accidentreport.html) with a value exceeding 16 bit range.
+
++++
+## Conclusion
+
+* Surprising variety in basic type across languages.
+* More care required in C/C++ than some other lanugages for integer maths.
+* Understanding variable size is important particularly if values are likely to exceed.
+* Enlarging variables on existing code - care with:
+  * maths,
+  * constant values which may need `L` or `LL` suffixing.
+* Microsoft LLP64 vs rest of world LP64 - care with `long` for portable code.
+* Cygwin on Windows uses LP64.
+
++++
+## Further reading
+
+* [LP64 and LLP64](https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models)
+* [leap smear](https://developers.google.com/time/smear) and [leap seconds](https://en.wikipedia.org/wiki/Leap_second)
 
