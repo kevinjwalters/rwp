@@ -83,16 +83,17 @@ e.g `int32_t` and `uint64_t`.
 * A signed 32 bit integer can stored a value just over 2 billion.
 * Are "large" integers only used in scientific applications?
 * Would a simple program ever encounter this?
+
+---
+## Large integers
+### Time
+
 * Time is one area:
   * CPU clock speed increases and requirements for accuracy have driven requirements.
   * NTP, GPS/GLONASS and better hardware clocks and o/s support aid accuracy.
   * Time values often have been *changed* from seconds -> ms -> us -> ns.
   * Library changesr porting to new platform may require use of different resolution timers.
   * Changes must be very careful to ensure all maths is at appropriate precision.
-* File length:
-  * Storage has grown over last two decades
-  * Multi-TB disks common even at home.
-  * O/s now supports > 2TB files so `int` *cannot* be used for file size.
 
 Note:
 * Accuracy vs precision/resolution.
@@ -100,9 +101,28 @@ Note:
 * Are GPS receiver/clock perfect? Firmware bug free?
 * NTP essential to allow time comparison between hosts/devices.
 * Commercial software solutions offer superior time sync to ntp.
+
+---
+## Large integers
+### File size
+
+* Disk space and partition sizes.
+  * Storage has grown over last two decades
+  * Multi-TB disks common even at home.
+* File length:
+  * Files may typically be smaller than a disk but o/s should allow large ones.
+  * O/s now supports > 2GB files so `int` *cannot* be used for file size.
+* Unix has various leftovers to be wary of:
+  * `fseek()` on 32 bit binaries 
+  * `open()` behaviour needs modifying with `_FILE_OFFSET_BITS`
+
+Note:
+
 +++
 ## Integer overflow examples
 ### Types used for all examples
+
+All code is compiled to produce 64 bit binaries.
 
 ```c
 typedef int Duration;
@@ -135,7 +155,7 @@ for (i=0; i < 5; i++) {
 
 Note:
  * 500*1000 is one way to make this easier to read and less likely to get wrong number of zeros.
- * Compiler will optimise any maths which can be calculated at compile time.
+ * Compiler's optimiser can get calculate any constant values at compile time.
 
 ---
 ## Integer overflow examples
@@ -165,7 +185,7 @@ All is well, final value is two and half million microseconds.
     } 
 ```
 
-@[1-2](`Duration` is now used to hold a nano-second based value - can we remember what size variable is?)
+@[1-2](`Duration` is now used to hold a nano-second based value - can we remember what size that type is?)
 @[4-7](A difficult to read and therefore error-prone large value is added five times. Comment expresses programmer's intention.)
 
 ---
@@ -197,21 +217,141 @@ timer_us=-1794967296 timer_us=-1794967296
 
 @[1-4](Looks good.)
 @[5](A problem: overflowed value is printed twice but it's the same code! Microsoft uses LLP64 so `long` is 32 bits. Visual Studio does parse `printf()` string and warn about mismatches with args.)
+
 +++
-## Integers in other Languages 
+## Integer overflow examples
+### Example demo3() code
+
+```c
+    int i = 0;
+    Duration timer_ns = 0;
+    int six_us = 6e6;
+    int six_ns = six_us * 1000; /* no compiler warning - static tools may detect this */
+
+    timer_ns += six_ns;
+    printf("timer_ns=%ld\n", timer_ns, timer_ns);
+```
+
+@[1-2](Looks reasonable.)
+@[3](Still reasonable. `e` notation makes numbers easier to check.)
+@[4](An overflow from multiply *not* detected by code, no warnings from compiler. Static code analysers should find this.)
+@[6](Bad value is now added to `Duration` which is also too small to hold intended value.)
+@[7](Another bug here, too many values passed to `printf()`, wrong but harmless.)
+
+---
+## Integer overflow examples
+### Example demo3() output (gcc 4.8.5 Centos 7)
+
+```
+timer_ns=1705032704
+```
+
+* Value is clearly not 6 billion (nanoseconds)!
+* Value is 6*1000*1000*1000-(2^32)
+* Unit tests might pick this up.
+
+Note:
+* C has no operator for power, other languages use `^` or `**`
+* Same output on Windows.
+
++++
+## Integer overflow examples
+### Example demo4() code 
+
+```c
+    int i = 0;
+    ReplacementDuration timer_ns = 0;
+    int six_us = 6e6;
+    int64_t six_ns = six_us * 1000;
+
+    timer_ns += six_ns;
+    printf("timer_ns=%ld\n", timer_ns, timer_ns);
+```
+
+@[1-3](Looks reasonable.)
+@[4](Undetected overflow and no compiler warning. Static code analysers should find this.)
+@[6](`ReplacementDuration` sufficiently large to hold intended value but bad value is added.)
+@[7](Another bug here, too many values passed to `printf()`, wrong but harmless.)
+
+Note:
+* Mixing 32 bit and 64 bit arithmetic here without care has broken this.
+
+---
+## Integer overflow examples
+### Example demo4() output (gcc 4.8.5 Centos 7)
+
+```
+timer_ns=1705032704
+```
+
+* Value is clearly not 6 billion (nanoseconds)!
+* Value is 6*1000*1000*1000-(2^32)
+
+Note:
+* Same output on Windows.
+
++++
+## Integer overflow examples
+### Example demo5() code
+
+```c
+    int i = 0;
+    ReplacementDuration timer_ns = 0;
+    int six_us = 6e6;
+    int64_t six_ns = six_us * 1000L;
+
+    timer_ns += six_ns;
+    printf("timer_ns=%ld\n", timer_ns, timer_ns);
+```
+
+@[1-3](Reasonable.)
+@[4](C is harsh here - arithmetic is performed based on operand sizes (`int` and `long`) rather than assignment size.)
+@[6](Ok if the value in six_ns is ok.)
+@[7](Cut and paste buglet from previous examples.)
+
+Note:
+
+---
+## Integer overflow examples
+### Example demo5() output (gcc 4.8.5 Centos 7)
+
+```
+timer_ns=6000000000
+```
+
+* Correct on Linux (LP64) but not portable and would not work if compiled to produce a 32 bit binary.
+* `1000LL` rather than `1000L` would be one fix here, `(int64_t)six_us` is another.
+
+---
+## Integer overflow examples
+### Example demo5() output (cl 19.14.26431 Windows 10)
+
+```
+timer_ns=1705032704
+```
+
+* Output wrong on Windows (LLP64).
+* `1000LL` rather than `1000L` would be one fix here, `(int64_t)six_us` is another.
+
++++
+## Integers in other languages 
 
 * Perl - single number type which on overflow will promote to unsigned integer or double - integer size *varies* between 32 bit and 64 bit interpreter.
 * Python 2 - `int` which auto promotes to infinite precision `long` since v2.2 ([PEP 237](https://www.python.org/dev/peps/pep-0237/))
 * Python 3 - infinite precision (cf perl's [Math::BigInt](https://perldoc.perl.org/Math/BigInt.html))
 * MicroPython - uses 31 bit `smallint` as 1 bit is re-purposed.
+* Java - size of `int` is always 32 bit, size of `long` is always 64, both signed only and both overflow (cf [Integer](https://docs.oracle.com/javase/8/docs/api/?java/lang/Integer.html) object and [autoboxing](https://docs.oracle.com/javase/tutorial/java/data/autoboxing.html))
+* bc - a basic calculator on unix - infinite precision 
 
 Note:
 * Terminology on each line refers to types in each language which may differ to C.
+* Infinite precision also known as arbitrary precision. Both clearly limited by available memory!
 * MicroPython is a smaller version of Python 3 for [BBC micro:bit](http://microbit.org/)
-* CircuitPython is Adafruit's fork of MicroPython for their microcontroller boards.
+* `smallint` is an efficiency measure for small microcontroller boards.
+* CircuitPython is Adafruit's fork of MicroPython for their boards.
 
 +++
-## Calculation durations
+## Calculating durations
 
 ```c
 t1 = timenow();
@@ -242,14 +382,25 @@ Note:
 * More care required in C/C++ than some other lanugages for integer maths.
 * Understanding variable size is important particularly if values are likely to exceed.
 * Enlarging variables on existing code - care with:
-  * maths,
+  * math operations,
   * constant values which may need `L` or `LL` suffixing.
+  * likely to enlarge data structures
+  * more complicated for library code particularly with a diverse userbase
+  * likely to break ABI, e.g. a library change may force a recompile of (ALL!) code using it
+
+---
+## Further thoughts
+
+* Think about atypical but possible values for unit tests.
+* Think hard about interfaces in advance to minimise breakage and new versions.
+* Error conditions may give unexpected numbers, more so if documentation isn't read!
+* Exceptions may cause lack of assignment to a variable leaving a previous or random value.
 * Microsoft LLP64 vs rest of world LP64 - care with `long` for portable code.
 * Cygwin on Windows uses LP64.
 
-+++
+---
 ## Further reading
 
+* Code examples: [silent-32bit-overflow.c](https://github.com/kevinjwalters/rwp-examples/blob/master/examples/silent-32bit-overflow/silent-32bit-overflow.c)
 * [LP64 and LLP64](https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models)
-* [leap smear](https://developers.google.com/time/smear) and [leap seconds](https://en.wikipedia.org/wiki/Leap_second)
-
+* [Communications of the ACM: Lessons from Building Static Analysis Tools at Google](https://cacm.acm.org/magazines/2018/4/226371-lessons-from-building-static-analysis-tools-at-google/fulltext)
