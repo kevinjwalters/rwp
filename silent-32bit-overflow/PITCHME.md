@@ -294,11 +294,11 @@ eflags         0xa07    [ CF PF IF OF ]
 @[3](Set an initial breakpoint to stop at.)
 @[3](Set an initial breakpoint to stop at.)
 @[5](Run code with no arguments.)
-@[7](Next C instruction.)
-@[9](Inspect [CPU flags register](https://en.wikipedia.org/wiki/FLAGS_register).)
+@[7-8](Next C instruction.)
+@[9-10](Inspect [CPU flags register](https://en.wikipedia.org/wiki/FLAGS_register).)
 @[11](Next assembler instruction (`mov    -0xc(%rbp),%eax`))
 @[13](Next assembler instruction, the multiply (`imul   $0x3e8,%eax,%eax`))
-@[15](Inspect CPU flags - `CF` set for carry, `OF` for overflow.)
+@[15-16](Inspect CPU flags - `CF` set for carry, `OF` for overflow.)
 
 
 ---
