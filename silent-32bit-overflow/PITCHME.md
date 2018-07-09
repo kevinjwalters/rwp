@@ -551,23 +551,14 @@ Dump of assembler code for function demo8:
 * `%ax` is the original 16 bit accumulator on the 8086/8088, `e` prefix for extended.
 * First `printf` appears to have been optimised to a more efficient `puts`.
 
-
 ---
-## Integers in other languages 
+## Other examples
 
-* Perl - single number type which on overflow will promote to unsigned integer or double - integer size *varies* between 32 bit and 64 bit interpreter.
-* Python 2 - `int` which auto promotes to infinite precision `long` since v2.2 ([PEP 237](https://www.python.org/dev/peps/pep-0237/))
-* Python 3 - infinite precision (cf perl's [Math::BigInt](https://perldoc.perl.org/Math/BigInt.html))
-* MicroPython - uses 31 bit `smallint` as 1 bit is re-purposed.
-* Java - size of `int` is always 32 bit, size of `long` is always 64, both signed only and both overflow (cf [Integer](https://docs.oracle.com/javase/8/docs/api/?java/lang/Integer.html) object and [autoboxing](https://docs.oracle.com/javase/tutorial/java/data/autoboxing.html))
-* bc - a basic calculator on unix - infinite precision 
-
-Note:
-* Terminology on each line refers to types in each language which may differ to C.
-* Infinite precision also known as arbitrary precision. Both clearly limited by available memory!
-* MicroPython is a smaller version of Python 3 for [BBC micro:bit](http://microbit.org/)
-* `smallint` is an efficiency measure for small microcontroller boards.
-* CircuitPython is Adafruit's fork of MicroPython for their boards.
+* Epoch times:
+  * Unix `gettimeofday()` used `int`, now `time_t` but can still be 32 or 64 bit - signed gives range from 1970 to ~2038 - [Y2038 problem](https://en.wikipedia.org/wiki/Year_2038_problem)
+* 100Hz timer - signed int max is ~248 days - [B787 bug](https://www.engadget.com/2015/05/01/boeing-787-dreamliner-software-bug/)
+* Ada throws exceptions for conversions:
+  * Expensive error: [Ariane 5 failure](http://sunnyday.mit.edu/accidents/Ariane5accidentreport.html) from a value exceeding 16 bit range.
 
 ---
 ## Calculating durations
@@ -587,13 +578,21 @@ duration = t2 - t1;
 Note:
 
 ---
-## Other examples
+## Integers in other languages 
 
-* Epoch times:
-  * Unix `gettimeofday()` used `int`, now `time_t` but can still be 32 or 64 bit - signed gives range from 1970 to ~2038 - [Y2038 problem](https://en.wikipedia.org/wiki/Year_2038_problem)
-* 100Hz timer - signed int max is ~248 days - [B787 bug](https://www.engadget.com/2015/05/01/boeing-787-dreamliner-software-bug/)
-* Ada throws exceptions for conversions:
-  * Expensive error: [Ariane 5 failure](http://sunnyday.mit.edu/accidents/Ariane5accidentreport.html) from a value exceeding 16 bit range.
+* Perl - single number type which on overflow will promote to unsigned integer or double - integer size *varies* between 32 bit and 64 bit interpreter.
+* Python 2 - `int` which auto promotes to infinite precision `long` since v2.2 ([PEP 237](https://www.python.org/dev/peps/pep-0237/))
+* Python 3 - infinite precision (cf perl's [Math::BigInt](https://perldoc.perl.org/Math/BigInt.html))
+* MicroPython - uses 31 bit `smallint` as 1 bit is re-purposed.
+* Java - size of `int` is always 32 bit, size of `long` is always 64, both signed only and both overflow (cf [Integer](https://docs.oracle.com/javase/8/docs/api/?java/lang/Integer.html) object and [autoboxing](https://docs.oracle.com/javase/tutorial/java/data/autoboxing.html))
+* bc - a basic calculator on unix - infinite precision 
+
+Note:
+* Terminology on each line refers to types in each language which may differ to C.
+* Infinite precision also known as arbitrary precision. Both clearly limited by available memory!
+* MicroPython is a smaller version of Python 3 for [BBC micro:bit](http://microbit.org/)
+* `smallint` is an efficiency measure for small microcontroller boards.
+* CircuitPython is Adafruit's fork of MicroPython for their boards.
 
 ---
 ## Conclusion
