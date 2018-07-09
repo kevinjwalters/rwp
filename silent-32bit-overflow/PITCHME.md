@@ -450,7 +450,7 @@ timer_ns=-1794967296
 ```
 
 @[1-3](Reasonable but `OtherDuration` is only 32 bit.)
-@[4](Classic C has no boolean type so `int` often used as stand-in.)
+@[4](ANSI C had no boolean type so `int` often used as stand-in, C99 introduced `bool` with `stdbool.h`.)
 @[6-8](Since `OtherDuration` is an unsigned type this can hold value of 4 billion.)
 @[9-11](An overflow from a further addition to the value - code could be far more complex than this example making it difficult to spot.)
 @[12](Value is not what we were hoping for.)
