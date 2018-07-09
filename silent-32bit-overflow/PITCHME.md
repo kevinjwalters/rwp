@@ -62,6 +62,9 @@ Note:
 * Cray 1 64 bit 1975
 * Silicon Graphics started using 64 bit MIPS circa 1991
 * DEC Alpha was 64 bit circa 1991
+* Some older devices. 
+* [Difference Engine](https://en.wikipedia.org/wiki/Difference_engine) 6-31 digits 1822-1830, 1991
+* [Z1 computer/calculator](https://en.wikipedia.org/wiki/Z1_(computer)) 22 bit 1938, 1989
 
 +++
 ## C variables size
@@ -91,12 +94,12 @@ e.g `int32_t` and `uint64_t`.
   * CPU clock speed increases and requirements for accuracy have driven requirements.
   * NTP, GPS/GLONASS and better hardware clocks and o/s support aid accuracy.
   * Time values often have been *changed* from seconds -> ms -> us -> ns.
-  * Library changesr porting to new platform may require use of different resolution timers.
+  * Library changes porting to new platform may require use of different resolution timers.
   * Changes must be very careful to ensure all maths is at appropriate precision.
 
 Note:
 * Accuracy vs precision/resolution.
-* GPS/GLONASS extremely accurate but very weak signal and not authenticated for civilian use.
+* GPS/GLONASS extremely accurate but very weak signal and civilian signal has no data signing.
 * Are GPS receiver/clock perfect? Firmware bug free?
 * NTP essential to allow time comparison between hosts/devices.
 * Commercial software solutions offer superior time sync to ntp.
@@ -246,7 +249,8 @@ timer_us=-1794967296 timer_us=-1794967296
 Note:
 * Static code analysis can be very valuable but needs to be carefully introduced to existing code bases and challenging to introduce technically and culturally across a large enterprise.
 * Global or project level inhibition of warnings from compiler and analyser can be beneficial to reduce noise but can also hide problems.
-* A sophisiticated approach is for the analyser to suggest code changes by applying to code *via an approval gate*.
+* A sophisticated approach is for the analyser to suggest code changes by applying to code *via an approval gate*.
+
 +++
 ## Integer overflow examples
 ### Example demo3() output (gcc 4.8.5 Centos 7)
@@ -262,6 +266,39 @@ timer_ns=1705032704
 Note:
 * C has no operator for power, other languages use `^` or `**`
 * Same output on Windows.
+
++++
+### Example demo3() debugger (gdb Centos 7)
+
+```
+$ gdb silent-32bit-overflow
+...
+(gdb) b demo3
+Breakpoint 1 at 0x400608: file silent-32bit-overflow.c, line 50.
+(gdb) r
+...
+(gdb) n
+53          int six_ns = six_us * 1000; /* no compiler warning - static tools may detect this */
+(gdb) info registers eflags
+eflags         0x202    [ IF ]
+(gdb) nexti
+0x0000000000400620      53          int six_ns = six_us * 1000; /* no compiler warning - static tools may detect this */
+(gdb) nexti
+0x0000000000400626      53          int six_ns = six_us * 1000; /* no compiler warning - static tools may detect this */
+(gdb) info registers eflags
+eflags         0xa07    [ CF PF IF OF ]
+```
+
+@[1](Run debugger against the binary which was compiled with `-g` option.)
+@[3](Set an initial breakpoint to stop at.)
+@[3](Set an initial breakpoint to stop at.)
+@[5](Run code with no arguments.)
+@[7](Next C instruction.)
+@[9](Inspect [CPU flags register](https://en.wikipedia.org/wiki/FLAGS_register).)
+@[11](Next assembler instruction (`mov    -0xc(%rbp),%eax`))
+@[13](Next assembler instruction, the multiply (`imul   $0x3e8,%eax,%eax`))
+@[15](Inspect CPU flags - `CF` set for carry, `OF` for overflow.)
+
 
 ---
 ## Integer overflow examples
@@ -343,6 +380,161 @@ timer_ns=1705032704
 * `1000LL` rather than `1000L` would be one fix here, `(int64_t)six_us` is another.
 
 ---
+## Integer overflow examples
+### Example demo6() code
+
+```c
+    int i = 0;
+    ReplacementDuration timer_ns = 0;
+
+    for (i=0; i < 5; i++) {
+        timer_ns += 500000000L; /* add half a second */
+        printf("timer_ns=%ld\n", timer_ns);
+    } 
+```
+
+@[1-4](Reasonable.)
+@[5](Value is suffixed with `L` for `long`, size will vary accordingly but maths should be ok as other implied operand is of `ReplacementDuration`.)
+@[6](`timer_ns` is an `int64_t` but `%ld` is a `long` ...)
+
++++
+## Integer overflow examples
+### Example demo6() output (gcc 4.8.5 Centos 7)
+
+```
+timer_ns=500000000000
+timer_ns=1000000000000
+timer_ns=1500000000000
+timer_ns=2000000000000
+timer_ns=2500000000000
+```
+
+* As expected.
+
++++
+## Integer overflow examples
+### Example demo6() output (cl 19.14.26431 Windows 10)
+
+```
+timer_ns=500000000
+timer_ns=1000000000
+timer_ns=1500000000
+timer_ns=2000000000
+timer_ns=-1794967296
+```
+
+* The maths is ok here, the variable values are ok.
+* The `printf()` format mismatch has caused the good value to be printed as a 32 bit on due to `LLP64`.
+* This bug could be very confusing if result is used both as an int and string via (from `snprintf`) in the code!
+
+---
+## Integer overflow examples
+### Example demo7() code
+
+```c
+```
+
++++
+## Integer overflow examples
+### Example demo7() output (gcc 4.8.5 Centos 7)
+
+```
+timer_ns=705032704
+timer_ns=500705032704
+```
+
+* Same on Windows.
+
+---
+## Division by zero example
+### Example demo8() code
+
+This is not a case of overflow but another area which needs care using (integer) arithmetic.
+
+```c
+    int about_to_terminate = 0100;
+    int could_be_any_value = 0;
+
+    printf("%s\n", __func__);
+    printf("Dividing %d by %d ... \n", about_to_terminate, could_be_any_value);
+
+    return about_to_terminate / could_be_any_value;
+```
+
+@[1](The leading `0` looks harmless but is significant in C (and Python 2).)
+@[2](Reasonable so far.)
+@[4](This is printing the function name (`demo8`) which is available as `__func__`.)
+@[5](Code is ok but will print output indicating imminent doom.)
+@[6](Not ok, code will fail on the integer divide and the *only way* to avoid or catch this is to not do it.)
+
+Note:
+* `0` prefix is for octal (base 8) values - Python 3 appears not to support this slightly archaic base.
+* Floating point can be caught.
+
++++
+## Division by zero example
+### Example demo8() output (gcc 4.8.5 Centos 7)
+
+```
+Dividing 64 by 0 ...
+Floating point exception (core dumped)
+```
+
+* 64 is octal 100
+* TBD why Linux prints this as a Floating point exception!
+
++++
+## Division by zero example
+### Example demo8() debugger (gdb Centos 7)
+
+```
+$ gdb silent-32bit-overflow core.30423
+...
+Core was generated by `./silent-32bit-overflow'.
+Program terminated with signal 8, Arithmetic exception.
+#0  0x000000000040082d in demo8 () at silent-32bit-overflow.c:121
+121         return about_to_terminate / could_be_any_value;
+Missing separate debuginfos, use: debuginfo-install glibc-2.17-222.el7.x86_64
+```
+
+* Confirms arithmetic exception 
+* signal 8 is `SIGFPE` (see `kill -l` output)
+* Probably same signal shared for integer and uncaught floating point exceptions.
+* Can look below the C code...
+
++++
+## Division by zero example
+### Example demo8() debugger (gdb Centos 7)
+
+```
+(gdb) disassemble
+Dump of assembler code for function demo8:
+   0x00000000004007f2 <+0>:     push   %rbp
+   0x00000000004007f3 <+1>:     mov    %rsp,%rbp
+   0x00000000004007f6 <+4>:     sub    $0x10,%rsp
+   0x00000000004007fa <+8>:     movl   $0x40,-0x4(%rbp)
+   0x0000000000400801 <+15>:    movl   $0x0,-0x8(%rbp)
+   0x0000000000400808 <+22>:    mov    $0x4009c2,%edi
+   0x000000000040080d <+27>:    callq  0x400430 <puts@plt>
+   0x0000000000400812 <+32>:    mov    -0x8(%rbp),%edx
+   0x0000000000400815 <+35>:    mov    -0x4(%rbp),%eax
+   0x0000000000400818 <+38>:    mov    %eax,%esi
+   0x000000000040081a <+40>:    mov    $0x400980,%edi
+   0x000000000040081f <+45>:    mov    $0x0,%eax
+   0x0000000000400824 <+50>:    callq  0x400440 <printf@plt>
+   0x0000000000400829 <+55>:    mov    -0x4(%rbp),%eax
+   0x000000000040082c <+58>:    cltd
+=> 0x000000000040082d <+59>:    idivl  -0x8(%rbp)
+   0x0000000000400830 <+62>:    leaveq
+   0x0000000000400831 <+63>:    retq
+```
+
+* Blows up as expected on a division instructor `idivl` operates on accumulator `%eax`
+* `%ax` is the original 16 bit accumulator on the 8086/8088, `e` prefix for extended.
+* first `printf` appears to have been optimised to a more efficient `puts`
+
+
+---
 ## Integers in other languages 
 
 * Perl - single number type which on overflow will promote to unsigned integer or double - integer size *varies* between 32 bit and 64 bit interpreter.
@@ -389,7 +581,7 @@ Note:
 ## Conclusion
 
 * Surprising variety in basic type across languages.
-* More care required in C/C++ than some other lanugages for integer maths.
+* More care required in C/C++ than some other languages for integer maths.
 * Understanding variable size is important particularly if values are likely to exceed.
 * Enlarging variables on existing code - care with:
   * math operations,
@@ -397,6 +589,7 @@ Note:
   * likely to enlarge data structures
   * more complicated for library code particularly with a diverse userbase
   * likely to break ABI, e.g. a library change may force a recompile of (ALL!) code using it
+* And don't divide by zero - for integers this cannot be caught in C.
 
 +++
 ## Further thoughts
@@ -414,3 +607,4 @@ Note:
 * Code examples: [silent-32bit-overflow.c](https://github.com/kevinjwalters/rwp-examples/blob/master/examples/silent-32bit-overflow/silent-32bit-overflow.c)
 * [LP64 and LLP64](https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models)
 * [Communications of the ACM: Lessons from Building Static Analysis Tools at Google](https://cacm.acm.org/magazines/2018/4/226371-lessons-from-building-static-analysis-tools-at-google/fulltext)
+* [Large File support](https://en.wikipedia.org/wiki/Large_file_support)
