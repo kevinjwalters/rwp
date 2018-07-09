@@ -155,8 +155,8 @@ for (i=0; i < 5; i++) {
 @[4-7](Five iterations adding half a second in microseconds. `printf()` uses C's primitive approach to handling a variable number of arguments.)
 
 Note:
- * 500*1000 is one way to make this easier to read and less likely to get wrong number of zeros.
- * Compiler's optimiser can get calculate any constant values at compile time.
+ * 500*1000 is one way to make this easier to read and less likely to write the wrong number of zeros.
+ * Compiler's optimiser can calculate any constant values at compile time.
 
 +++
 ## Integer overflow examples
@@ -196,6 +196,7 @@ Note:
 * Change management systems when used well can either show directly *why* something was done based on the change log or on tickets references in the change log.
 * Very low detail in change log is rarely a good sign.
 * Change log (and tickets) must be preserved to aid future programmers *even when source code control system changes*.
+
 +++
 ## Integer overflow examples
 ### Example demo2() output (gcc 4.8.5 Centos 7)
