@@ -432,7 +432,30 @@ timer_ns=-1794967296
 ### Example demo7() code
 
 ```c
+    int i = 0;
+    ReplacementDuration timer_ns = 0;
+    OtherDuration localtimer = 0;
+    int rarecondition = 1;
+
+    timer_ns = 500000000L;  /* set to half a second */
+    localtimer += 2*1000*1000*1000; /* two seconds */
+    localtimer += 2*1000*1000*1000; /* two more seconds */
+    if (rarecondition) {
+        localtimer += 1*1000*1000*1000; /* just one more second */
+    }
+    printf("timer_ns=%u\n", localtimer);
+    timer_ns += localtimer;  /* add half a second */
+    printf("timer_ns=" ReplacementDurationFormat "\n", timer_ns);
 ```
+
+@[1-3](Reasonable but `OtherDuration` is only 32 bit.)
+@[4](Classic C has no boolean type so `int` often used as stand-in.)
+@[6-8](Since `OtherDuration` is an unsigned type this can hold value of 4 billion.)
+@[9-11](An overflow from a further addition to the value - code could be far more complex than this example making it difficult to spot.)
+@[12](Value is not what we were hoping for.)
+@[13](Adding bad value.)
+@[14](Bad final result.)
+
 
 +++
 ## Integer overflow examples
