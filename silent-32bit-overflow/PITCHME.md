@@ -523,7 +523,7 @@ Missing separate debuginfos, use: debuginfo-install glibc-2.17-222.el7.x86_64
 * Confirms arithmetic exception 
 * signal 8 is `SIGFPE` (see `kill -l` output)
 * Probably same signal shared for integer and uncaught floating point exceptions.
-* Can look below the C code...
+* Can look underneath the C code...
 
 +++
 ## Division by zero example
@@ -535,15 +535,9 @@ Dump of assembler code for function demo8:
    0x00000000004007f2 <+0>:     push   %rbp
    0x00000000004007f3 <+1>:     mov    %rsp,%rbp
    0x00000000004007f6 <+4>:     sub    $0x10,%rsp
-   0x00000000004007fa <+8>:     movl   $0x40,-0x4(%rbp)
-   0x0000000000400801 <+15>:    movl   $0x0,-0x8(%rbp)
-   0x0000000000400808 <+22>:    mov    $0x4009c2,%edi
+...
    0x000000000040080d <+27>:    callq  0x400430 <puts@plt>
-   0x0000000000400812 <+32>:    mov    -0x8(%rbp),%edx
-   0x0000000000400815 <+35>:    mov    -0x4(%rbp),%eax
-   0x0000000000400818 <+38>:    mov    %eax,%esi
-   0x000000000040081a <+40>:    mov    $0x400980,%edi
-   0x000000000040081f <+45>:    mov    $0x0,%eax
+...
    0x0000000000400824 <+50>:    callq  0x400440 <printf@plt>
    0x0000000000400829 <+55>:    mov    -0x4(%rbp),%eax
    0x000000000040082c <+58>:    cltd
@@ -552,9 +546,9 @@ Dump of assembler code for function demo8:
    0x0000000000400831 <+63>:    retq
 ```
 
-* Blows up as expected on a division instructor `idivl` operates on accumulator `%eax`
+* Blows up as expected on a division instructor, `idivl` operates on accumulator `%eax`.
 * `%ax` is the original 16 bit accumulator on the 8086/8088, `e` prefix for extended.
-* first `printf` appears to have been optimised to a more efficient `puts`
+* First `printf` appears to have been optimised to a more efficient `puts`.
 
 
 ---
