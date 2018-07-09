@@ -1,4 +1,4 @@
-## Finite precision maths and overflow v1.1
+## Finite precision integer maths and overflow v1.2
 ![Logo test](/images/test-logo1.jpg)
 
 ![Create Commons License BY-NC-ND/4.0](https://i.creativecommons.org/l/by-nc-nd/4.0/88x31.png)
